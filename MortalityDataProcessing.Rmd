@@ -1,0 +1,332 @@
+---
+title: "Mortality in Mexico between the years 2012 and 2020 "
+author: "Joel Chavez Gomez"
+date: "January 31, 2022"
+output: html_document
+---
+## Introduction
+The purpose of this project is to take the Mortality data from Mexico, process 
+the data and make interactive plots for visualization of mortality of diagnosis of
+interest. The data was taken from [INEGI](https://www.inegi.org.mx/programas/mortalidad/), 
+and includes mortality data from the years 2012 to 2020. The interactive plots 
+that will be created will include overall mortality by diagnosis and mortality
+by gender of the aforementioned years.
+
+Data was downloaded via a 'Massive Download App' that can be found on INEGI 
+webpage.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse); library(plotly)
+library(kableExtra)
+```
+
+## Data Preprocessing
+The libraries `tidyverse` and `plotly` were loaded. The directories obtained via
+the download app were renamed into the year which data they contained, just to order
+the directories by year. A list of the path directories and the subdirectories
+they contain was created to make reading of multiple csv files easier. Subdirectories in each year directories conviniently have the same name. the csv files containing the mortality
+data was read into a list of dataframes, which then was separated into multiple 
+data frames, each for one year, and the list of dataframes was removed from the 
+enviroment for decluttering.
+
+```{r data-loading, echo = TRUE, cache = TRUE}
+fileList <- list.files(path = "C:/Users/chave/Desktop/Mortalidad", 
+                       full.names = TRUE, 
+                       include.dirs = TRUE)
+
+dirs <- list.files(path = fileList[1], 
+                   full.names = FALSE)
+
+csvPaths <- c()
+
+for(i in 1:9){
+        path <- paste(fileList[i], dirs[2], sep = "/")
+        csvPaths <- c(csvPaths, list.files(path = path,
+                   full.names = TRUE))
+}
+
+datasets <- grep("defunciones", csvPaths, ignore.case = TRUE)
+
+dataFrames <- list()
+for(i in datasets){
+        dataFrames[[i]] <- read.csv(file = csvPaths[i], 
+                 header = TRUE)
+}
+
+mortalidad2012 <- dataFrames[[1]]
+mortalidad2013 <- dataFrames[[2]]
+mortalidad2014 <- dataFrames[[3]]
+mortalidad2015 <- dataFrames[[4]]
+mortalidad2016 <- dataFrames[[5]]
+mortalidad2017 <- dataFrames[[6]]
+mortalidad2018 <- dataFrames[[8]]
+mortalidad2019 <- dataFrames[[9]]
+mortalidad2020 <- dataFrames[[10]]
+rm(dataFrames)
+```
+
+
+The mortality data from the year 2019 contained 2 extra rows from error correction
+of fetal deaths, which are of no interest for this project and were removed to 
+make all dataframes contain the same number of columns.
+```{r}
+mortalidad2018 <- mortalidad2018[, -c(60:62)]
+```
+
+We now have 9 data frames, with the following dimensions:
+
+```{r dim-table, echo = FALSE}
+data.frame(
+        Year = c(2012:2020), 
+        Observations = c(
+                dim(mortalidad2012)[1],
+                dim(mortalidad2013)[1],
+                dim(mortalidad2014)[1],
+                dim(mortalidad2015)[1],
+                dim(mortalidad2016)[1],
+                dim(mortalidad2017)[1],
+                dim(mortalidad2018)[1],
+                dim(mortalidad2019)[1],
+                dim(mortalidad2020)[1]
+        ), 
+        Variables = c(
+                dim(mortalidad2012)[2],
+                dim(mortalidad2013)[2],
+                dim(mortalidad2014)[2],
+                dim(mortalidad2015)[2],
+                dim(mortalidad2016)[2],
+                dim(mortalidad2017)[2],
+                dim(mortalidad2018)[2],
+                dim(mortalidad2019)[2],
+                dim(mortalidad2020)[2]
+        )
+) %>%
+        kbl() %>%
+        kable_styling(bootstrap_options = "striped",
+                      full_width = TRUE,
+                      position = "center")
+```
+The variables that are of itnerest for our project are:
+- `ent_ocurr`
+- `causa_def`
+- `lista_mex`
+- `lista_1`
+- `sexo`
+- `edad`
+- `dia_ocurr`
+- `mes_ocurr`
+- `anio_ocur`
+
+The rest of the variables were eliminated from the data frames.
+```{r dataframes-vars, echo = FALSE, cache = TRUE}
+mortalidad2012 <- mortalidad2012 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+mortalidad2013 <- mortalidad2013 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+mortalidad2014 <- mortalidad2014 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+mortalidad2015 <- mortalidad2015 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+mortalidad2016 <- mortalidad2016 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+mortalidad2017 <- mortalidad2017 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+mortalidad2018 <- mortalidad2018 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+mortalidad2019 <- mortalidad2019 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+mortalidad2020 <- mortalidad2020 %>% 
+        select(ent_ocurr,
+               causa_def,
+               sexo,
+               edad,
+               dia_ocurr,
+               mes_ocurr,
+               anio_ocur
+        )
+```
+
+Now let's look at the structure of the new data frames.
+```{r str, echo = FALSE}
+str(mortalidad2012)
+```
+Variables classes were changed
+```{r reclass, include = FALSE, cache = TRUE}
+reclass <- function(x){
+                transmute(x,
+                       state = as.factor(ent_ocurr), 
+                       dec_cause = as.factor(causa_def), 
+                       gender = as.factor(sexo),
+                       age = as.numeric(edad),
+                       date = as.Date(paste(
+                               dia_ocurr, 
+                               mes_ocurr, 
+                               anio_ocur, 
+                               sep = "/"
+                       ), "%d/%m/%Y")
+                )
+}
+
+mortalidad2012 <- reclass(mortalidad2012)
+mortalidad2013 <- reclass(mortalidad2013)
+mortalidad2014 <- reclass(mortalidad2014)
+mortalidad2015 <- reclass(mortalidad2015)
+mortalidad2016 <- reclass(mortalidad2016)
+mortalidad2017 <- reclass(mortalidad2017)
+mortalidad2018 <- reclass(mortalidad2018)
+mortalidad2019 <- reclass(mortalidad2019)
+mortalidad2020 <- reclass(mortalidad2020)
+```
+
+```{r metadata, include = FALSE, cache = TRUE}
+catalDirs <- list(
+        paste(fileList[1], dirs[1], sep = "/"), 
+        paste(fileList[2], dirs[1], sep = "/"), 
+        paste(fileList[3], dirs[1], sep = "/"), 
+        paste(fileList[4], dirs[1], sep = "/"), 
+        paste(fileList[5], dirs[1], sep = "/"), 
+        paste(fileList[6], dirs[1], sep = "/"), 
+        paste(fileList[7], dirs[1], sep = "/"), 
+        paste(fileList[8], dirs[1], sep = "/"), 
+        paste(fileList[9], dirs[1], sep = "/")
+)
+
+catList <- c(5)
+get_catalogues <- function(n){
+        x <- catalDirs[[n]]
+        y <- list.files(x, full.names = TRUE)[catList]
+        print(y)
+}
+cats <- list()
+for(i in 1:9){
+        x <- get_catalogues(i)
+        cats[[i]] <- c(x)
+}
+```
+
+```{r metadata-2, include = FALSE, cache = TRUE}
+# Reading metadata dataframes
+
+metadata <- list()
+for(i in 1:9){
+        metadata[[i]] <- read.csv(cats[[i]])
+}
+#rm(catalDirs); rm(catList); rm(csvPaths); rm(fileList)
+#rm(cats); rm(dirs); rm(x); rm(datasets): rm(i); rm(path)
+```
+
+```{r diagnosis, include = FALSE}
+
+cie10 <- data.frame(metadata[[1]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2012$dec_cause <- factor(x = mortalidad2012$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+cie10 <- data.frame(metadata[[2]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2013$dec_cause <- factor(x = mortalidad2013$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+cie10 <- data.frame(metadata[[3]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2014$dec_cause <- factor(x = mortalidad2014$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+cie10 <- data.frame(metadata[[4]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2015$dec_cause <- factor(x = mortalidad2015$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+cie10 <- data.frame(metadata[[5]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2016$dec_cause <- factor(x = mortalidad2016$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+cie10 <- data.frame(metadata[[6]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2017$dec_cause <- factor(x = mortalidad2017$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+cie10 <- data.frame(metadata[[7]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2018$dec_cause <- factor(x = mortalidad2018$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+cie10 <- data.frame(metadata[[8]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2019$dec_cause <- factor(x = mortalidad2019$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+cie10 <- data.frame(metadata[[9]])
+cnames <- c("code", "desc")
+colnames(cie10) <- cnames
+mortalidad2020$dec_cause <- factor(x = mortalidad2020$dec_cause, 
+                                   levels = cie10$code, 
+                                   labels = cie10$desc)
+
+```
