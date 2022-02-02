@@ -1,37 +1,7 @@
----
-title: "Mortality in Mexico between the years 2012 and 2020 "
-author: "Joel Chavez Gomez"
-date: "January 31, 2022"
-output: html_document
----
-## Introduction
-The purpose of this project is to take the Mortality data from Mexico, process 
-the data and make interactive plots for visualization of mortality of diagnosis of
-interest. The data was taken from [INEGI](https://www.inegi.org.mx/programas/mortalidad/), 
-and includes mortality data from the years 2012 to 2020. The interactive plots 
-that will be created will include overall mortality by diagnosis and mortality
-by gender of the aforementioned years.
-
-Data was downloaded via a 'Massive Download App' that can be found on INEGI 
-webpage.
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Script to generate datasets
 library(tidyverse); library(plotly)
 library(kableExtra); library(stringr)
-library(exploratory)
-```
 
-## Data Preprocessing
-The libraries `tidyverse` and `plotly` were loaded. The directories obtained via
-the download app were renamed into the year which data they contained, just to order
-the directories by year. A list of the path directories and the sub-directories
-they contain was created to make reading of multiple csv files easier. Sub-directories in each year directories conveniently have the same name. the csv files containing the mortality
-data was read into a list of data frames, which then was separated into multiple 
-data frames, each for one year, and the list of data frames was removed from the 
-environment for de-cluttering.
-
-```{r data-loading, echo = TRUE, cache = TRUE}
 fileList <- list.files(path = "C:/Users/chave/Desktop/Mortalidad", 
                        full.names = TRUE, 
                        include.dirs = TRUE)
@@ -44,7 +14,7 @@ csvPaths <- c()
 for(i in 1:9){
         path <- paste(fileList[i], dirs[2], sep = "/")
         csvPaths <- c(csvPaths, list.files(path = path,
-                   full.names = TRUE))
+                                           full.names = TRUE))
 }
 
 datasets <- grep("defunciones", csvPaths, ignore.case = TRUE)
@@ -52,7 +22,7 @@ datasets <- grep("defunciones", csvPaths, ignore.case = TRUE)
 dataFrames <- list()
 for(i in datasets){
         dataFrames[[i]] <- read.csv(file = csvPaths[i], 
-                 header = TRUE)
+                                    header = TRUE)
 }
 
 mortalidad2012 <- dataFrames[[1]]
@@ -65,18 +35,7 @@ mortalidad2018 <- dataFrames[[8]]
 mortalidad2019 <- dataFrames[[9]]
 mortalidad2020 <- dataFrames[[10]]
 rm(dataFrames)
-```
 
-The mortality data from the year 2019 contained 2 extra rows from error correction
-of fetal deaths, which are of no interest for this project and were removed to 
-make all data frames contain the same number of columns.
-```{r}
-mortalidad2018 <- mortalidad2018[, -c(60:62)]
-```
-
-We now have 9 data frames, each corresponding to General mortality from the years
-2012 to 2020, with the following dimensions:
-```{r dim-table, echo = FALSE}
 data.frame(
         Year = c(2012:2020), 
         Observations = c(
@@ -106,19 +65,7 @@ data.frame(
         kable_styling(bootstrap_options = "striped",
                       full_width = TRUE,
                       position = "center")
-```
-The variables that are of interest for our project are:
-- `ent_ocurr`: the state where the decease occurred.  
-- `causa_def`: the cause of the decease, with the corresponding [ICD-10](https://www.who.int/standards/classifications/classification-of-diseases)
-diagnosis code.  
-- `sexo`: gender of the deceased.  
-- `edad`: age at decease.  
-- `dia_ocurr`: day of the decease.  
-- `mes_ocurr`: month of the decease.  
-- `anio_ocur`: year of the decease.
 
-The rest of the variables were dropped from the data frames.
-```{r dataframes-vars, echo = FALSE, cache = TRUE, include = FALSE}
 mortalidad2012 <- mortalidad2012 %>% 
         select(ent_ocurr,
                causa_def,
@@ -200,31 +147,20 @@ mortalidad2020 <- mortalidad2020 %>%
                mes_ocurr,
                anio_ocur
         )
-```
 
-The structure of the data frames, which is the same for every year, is as follows:
-```{r str, echo = FALSE}
-str(mortalidad2012)
-```
-All variables were changed into factors, except `for dec_cause`, which was changed
-into a factor. The variables `dia_ocurr`, `mes_ocurr` and `anio_ocur` were pasted 
-into another column called `date` and changed to a Date with the format `%d/%m/%Y`.
-The code of every factor variable is available under the directory `./catalogos/`
-of the corresponding year as metadata.
-```{r reclass, include = FALSE, cache = TRUE}
 reclass <- function(x){
-                transmute(x,
-                       state = as.factor(ent_ocurr), 
-                       dec_cause = as.factor(causa_def), 
-                       gender = as.factor(sexo),
-                       age = as.character(edad),
-                       date = as.Date(paste(
-                               dia_ocurr, 
-                               mes_ocurr, 
-                               anio_ocur, 
-                               sep = "/"
-                       ), "%d/%m/%Y")
-                )
+        transmute(x,
+                  state = as.factor(ent_ocurr), 
+                  dec_cause = as.factor(causa_def), 
+                  gender = as.factor(sexo),
+                  age = as.character(edad),
+                  date = as.Date(paste(
+                          dia_ocurr, 
+                          mes_ocurr, 
+                          anio_ocur, 
+                          sep = "/"
+                  ), "%d/%m/%Y")
+        )
 }
 
 mortalidad2012 <- reclass(mortalidad2012)
@@ -236,9 +172,7 @@ mortalidad2017 <- reclass(mortalidad2017)
 mortalidad2018 <- reclass(mortalidad2018)
 mortalidad2019 <- reclass(mortalidad2019)
 mortalidad2020 <- reclass(mortalidad2020)
-```
 
-```{r metadata, include = FALSE, cache = TRUE}
 catalDirs <- list(
         paste(fileList[1], dirs[1], sep = "/"), 
         paste(fileList[2], dirs[1], sep = "/"), 
@@ -262,22 +196,11 @@ for(i in 1:9){
         x <- get_catalogues(i)
         cats[[i]] <- c(x)
 }
-```
-
-```{r metadata-2, include = FALSE, cache = TRUE}
-# Reading metadata dataframes
 
 metadata <- list()
 for(i in 1:9){
         metadata[[i]] <- read.csv(cats[[i]])
 }
-#rm(catalDirs); rm(catList); rm(csvPaths); rm(fileList)
-#rm(cats); rm(dirs); rm(x); rm(datasets): rm(i); rm(path)
-```
-the csv file containing the diagnosis codes for the `dec_cause` variable of each
-were read and saved into objects, which then were used to relabel the factors of
-each data frame.
-```{r diagnosis, include = FALSE}
 
 cie10 <- data.frame(metadata[[1]])
 cnames <- c("code", "desc")
@@ -334,18 +257,7 @@ mortalidad2020$dec_cause <- factor(x = mortalidad2020$dec_cause,
                                    levels = cie10$code, 
                                    labels = cie10$desc)
 
-```
 
-The age variable is coded as follows:
-- the first digit corresponds to one of four values (1 = hours, 2 = days, 3 = months and
-4 = years).
-- The next three digits correspond to the age specified from the previous digit, 
-with a range of 1 to 23 for hours, 1 to 29 for days, 1 to 11 for months and 1 to
-120 for years.  
-
-The age variable was separated into two columns, one for the first digit and another
-for the other 3 digits.
-```{r age}
 mortalidad2012 <- mortalidad2012 %>% 
         extract(age, 
                 into = c("age_code", "age_value"),
@@ -382,9 +294,7 @@ mortalidad2020 <- mortalidad2020 %>%
         extract(age, 
                 into = c("age_code", "age_value"),
                 "(.{1})(.{3})", remove=TRUE)
-```
 
-```{r age-numeric-fun, include = FALSE}
 numericAge <- function(x){
         ageCodes <- c("Horas", "Dias", "Meses", "años")
         if(x$age_code == "1"){
@@ -394,7 +304,7 @@ numericAge <- function(x){
         } else if(x$age_code == "2"){
                 x$age_value <- as.numeric(x$age_value)
                 mutate(x, age_numeric = x$age_value, 
-                      age_factor = ageCodes[2])
+                       age_factor = ageCodes[2])
         } else if(x$age_code == "3"){
                 x$age_value <- as.numeric(x$age_value)
                 mutate(x, age_numeric = x$age_value, 
@@ -405,10 +315,7 @@ numericAge <- function(x){
                        age_factor = ageCodes[4])
         }
 }
-```
 
-```{r reclass-age, warning = FALSE, message = FALSE, include = FALSE}
-# for loop?
 mortalidad2012 <- numericAge(mortalidad2012)
 mortalidad2013 <- numericAge(mortalidad2013)
 mortalidad2014 <- numericAge(mortalidad2014)
@@ -419,9 +326,6 @@ mortalidad2018 <- numericAge(mortalidad2018)
 mortalidad2019 <- numericAge(mortalidad2019)
 mortalidad2020 <- numericAge(mortalidad2020)
 
-```
-
-```{r drop-cols-fun}
 mortalidad2012$age_value <- as.numeric(mortalidad2012$age_value)
 mortalidad2012 <- mortalidad2012 %>%
         filter(age_code == "4") %>%
@@ -494,14 +398,7 @@ mortalidad2020 <- mortalidad2020 %>%
                gender, 
                age_numeric,
                date)
-```
 
-For the scope of this project we are only interested in the deceases of persons aged
-1 year or more, so these observations were filtered from each data frame and all
-data frames were joined into one large data frame which then was exported into the working
-directory.
-
-```{r one-dataset}
 MortalidadGeneral <- bind_rows(
         mortalidad2012, 
         mortalidad2013,
@@ -511,15 +408,24 @@ MortalidadGeneral <- bind_rows(
         mortalidad2017,
         mortalidad2018,
         mortalidad2019,
-        mortalidad2020
-)
+        mortalidad2020)
 
 write.csv(MortalidadGeneral,
           "C:/Users/chave/Desktop/Mortalidad/Mortalidad/MortalidadGeneral.csv", 
           row.names = FALSE)
-```
 
-```{r group-df}
 MortalidadGeneral <- MortalidadGeneral %>%
-        mutate(month = format(date, "%m"))
-```
+        mutate(month = as.factor(format(date, "%m")), 
+               year = as.factor(format(date, "%Y")))
+Mortalidad_estados <- MortalidadGeneral %>%
+        group_by(state, dec_cause, year) %>%
+        summarize(n())
+Mortalidad_anual <- MortalidadGeneral %>%
+        group_by(dec_cause, year) %>%
+        summarize(n())
+MortalidadTotal_anual_estados <- MortalidadGeneral %>%
+        group_by(state, year) %>%
+        summarize(n())
+MortalidadTotal_anual <- MortalidadGeneral %>%
+        group_by(gender, year) %>%
+        summarize(n())
